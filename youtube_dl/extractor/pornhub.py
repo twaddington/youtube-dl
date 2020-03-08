@@ -25,6 +25,12 @@ from ..utils import (
 )
 
 
+def _get_pkey(url, default=None):
+    """Returns the value of 'pkey' from the query string, or default."""
+    mobj = re.search(r'pkey=(\d+)', url)
+    return mobj.group(1) if mobj else default
+
+
 class PornHubBaseIE(InfoExtractor):
     def _download_webpage_handle(self, *args, **kwargs):
         def dl(*args, **kwargs):
@@ -152,6 +158,9 @@ class PornHubIE(PornHubBaseIE):
     }, {
         'url': 'https://www.pornhubpremium.com/view_video.php?viewkey=ph5e4acdae54a82',
         'only_matching': True,
+    }, {
+        'url': 'https://www.pornhub.com/view_video.php?viewkey=ph59e6a73995785&pkey=58595671',
+        'only_matching': True,
     }]
 
     @staticmethod
@@ -175,6 +184,14 @@ class PornHubIE(PornHubBaseIE):
                     'PornHub Premium requires authentication.'
                     ' You may want to use --cookies.',
                     expected=True)
+
+        pkey = _get_pkey(url)
+        if pkey is not None:
+            if self._downloader.params.get('noplaylist'):
+                self.to_screen('Downloading just video because of --no-playlist')
+            else:
+                self.to_screen('Downloading playlist - add --no-playlist to just download video')
+                return self.url_result('https://%s/playlist/%s' % (host, pkey))
 
         self._set_cookie(host, 'age_verified', '1')
 
